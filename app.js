@@ -59,11 +59,13 @@ const convertCasesAndActiveToResponseObject = (dbObject) => {
 app.get("/states/", async (request, response) => {
   const getStatesQuery = `
     SELECT *
-    FROM state`;
+    FROM state
+    ORDER BY state_id;`;
   const statesArray = await db.all(getStatesQuery);
-  response.send(
-    statesArray.map((eachState) => convertDbStatesToResponseObject(eachState))
-  );
+  const stateResult = statesArray.map((eachObject) => {
+    return convertDbStatesToResponseObject(eachObject);
+  });
+  response.send(stateResult);
 });
 
 app.get("/states/:stateId/", async (request, response) => {
@@ -73,7 +75,8 @@ app.get("/states/:stateId/", async (request, response) => {
     FROM state
     WHERE state_id = ${stateId}`;
   const stateIdResponse = await db.get(getStatesIdQuery);
-  response.send(convertDbStatesToResponseObject(stateIdResponse));
+  const stateResult = convertDbStatesToResponseObject(stateIdResponse);
+  response.send(stateResult);
 });
 
 app.post("/districts/", async (request, response) => {
@@ -96,7 +99,7 @@ app.post("/districts/", async (request, response) => {
         ${cases},
         ${cured},
         ${active},
-        ${deaths},
+        ${deaths}
     );`;
   const addDistrict = await db.run(postDistrictQuery);
   const districtId = addDistrict.lastId;
@@ -110,7 +113,8 @@ app.get("/districts/:districtId/", async (request, response) => {
     FROM district
     WHERE district_id = ${districtId};`;
   const districtArray = await db.get(getDistrictQuery);
-  response.send(convertDbDistrictToResponseObject(districtArray));
+  const districtResult = convertDbDistrictToResponseObject(districtArray);
+  response.send(districtResult);
 });
 
 app.delete("/districts/:districtId/", async (request, response) => {
@@ -144,7 +148,7 @@ app.put("/districts/:districtId/", async (request, response) => {
         cured = ${cured},
         active= ${active},
         deaths = ${deaths}
-    WHERE district_id = ${districtId}`;
+    WHERE district_id = ${districtId};`;
   await db.run(updateDistrictQuery);
   response.send("District Details Updated");
 });
@@ -157,11 +161,12 @@ app.get("/states/:stateId/stats/", async (request, response) => {
          SUM(cured) As cured,
          SUM(active) As active,
          SUM(deaths) As deaths
-    FROM state JOIN district ON state.state_id = district.state_id
-    WHERE district_id = ${districtId};
+    FROM district
+    WHERE  state_id = ${stateId};
     `;
-  const totalResponse = await db.all(getStateStatsQuery);
-  response.send(convertCasesAndActiveToResponseObject(totalResponse));
+  const totalResponse = await db.get(getStateStatsQuery);
+  const resultReport = convertCasesAndActiveToResponseObject(totalResponse);
+  response.send(resultReport);
 });
 
 app.get("/districts/:districtId/details/", async (request, response) => {
